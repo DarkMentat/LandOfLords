@@ -1,5 +1,7 @@
 package org.darkmentat.LandOfLords.SimplePcClient.network;
 
+import com.google.protobuf.GeneratedMessage;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -8,6 +10,8 @@ import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+
+import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.*;
 
 public class TCPClient {
     private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
@@ -59,9 +63,9 @@ public class TCPClient {
         }
     }
 
-    public void send(String message){
+    public void send(GeneratedMessage message){
         try {
-            mOutputStream.writeUTF(message);
+            packMessage(message).writeTo(mOutputStream);
         } catch (IOException e) {
             mOnError.ifPresent(c -> c.accept(e));
         }
@@ -70,6 +74,17 @@ public class TCPClient {
         while(mInputStream.hasNext()) {
             mOnReceiveData.ifPresent(c -> c.accept(mInputStream.nextLine()));
         }
+    }
+
+
+    private GeneratedMessage packMessage(GeneratedMessage msg){
+
+        if (msg == null) return Message.newBuilder().setType(Type.PING).build();
+        if (msg instanceof Login) return Message.newBuilder().setType(Type.LOGIN).setLogin((Login) msg).build();
+        if (msg instanceof Register) return Message.newBuilder().setType(Type.REGISTER).setRegister((Register) msg).build();
+
+
+        throw new IllegalArgumentException("message must be from net_messages_to_server.proto");
     }
 }
 

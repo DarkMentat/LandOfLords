@@ -1,0 +1,21 @@
+package org.darkmentat.LandOfLords.Common;
+
+option java_package = "org.darkmentat.LandOfLords.Common";
+option java_outer_classname = "NetMessagesToServer";
+
+enum Type { PING = 1; LOGIN = 2; REGISTER = 3; }
+
+message Login {
+    required string login = 1;
+}
+message Register {
+    required string login = 1;
+    required string email = 2;
+}
+
+message Message {
+    required Type type = 1;
+
+    optional Login login = 2;
+    optional Register register = 3;
+}
