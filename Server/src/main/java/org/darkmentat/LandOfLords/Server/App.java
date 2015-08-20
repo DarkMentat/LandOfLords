@@ -5,6 +5,7 @@ import akka.actor.ActorSystem;
 import akka.actor.Inbox;
 import akka.actor.Props;
 
+import org.darkmentat.LandOfLords.Common.Test;
 import org.darkmentat.LandOfLords.Server.network.FrontNetworkActor;
 import org.darkmentat.LandOfLords.Server.network.NetworkClientActor;
 import scala.concurrent.duration.Duration;
@@ -41,6 +42,13 @@ public class App {
                 }
             }
         }
+
+        Test.Car car = Test.Car.newBuilder().setColor("red").setModel("lalka").setType(Test.Car.BodyType.sedan)
+                .setYear(1337).build();
+
+        byte[] bytes = car.toByteArray();
+
+        Test.Car car2 = Test.Car.parseFrom(bytes);
 
         system.terminate();
     }
