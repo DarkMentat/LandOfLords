@@ -28,7 +28,7 @@
                             <inputDirectories>
                                 <inputDirectory>${project.basedir}/src/main/protobuf/org/darkmentat/LandOfLords</inputDirectory>
                             </inputDirectories>
-                            <outputDirectory>${project.basedir}/gen/main/java/org/darkmentat/LandOfLords</outputDirectory>
+                            <outputDirectory>${project.basedir}/gen/main/java/</outputDirectory>
                             <cleanOutputFolder>false</cleanOutputFolder>
                         </configuration>
                         <goals>
