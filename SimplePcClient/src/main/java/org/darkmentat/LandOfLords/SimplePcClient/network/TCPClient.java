@@ -2,6 +2,7 @@ package org.darkmentat.LandOfLords.SimplePcClient.network;
 
 import com.google.protobuf.GeneratedMessage;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -20,10 +21,10 @@ public class TCPClient {
     private final int mPort;
 
     private Socket mSocket;
-    private Scanner mInputStream;
+    private DataInputStream mInputStream;
     private DataOutputStream mOutputStream;
 
-    private Optional<Consumer<String>> mOnReceiveData = Optional.empty();
+    private Optional<Consumer<Message>> mOnReceiveData = Optional.empty();
     private Optional<Consumer<Exception>> mOnError = Optional.empty();
 
     public TCPClient(String host, int port) {
@@ -31,7 +32,7 @@ public class TCPClient {
         mPort = port;
     }
 
-    public void setOnReceiveData(Consumer<String> onReceiveData) {
+    public void setOnReceiveData(Consumer<Message> onReceiveData) {
         mOnReceiveData = Optional.of(onReceiveData);
     }
     public void setOnError(Consumer<Exception> onError) {
@@ -41,7 +42,7 @@ public class TCPClient {
     public void connect(){
         try {
             mSocket = new Socket(mHost, mPort);
-            mInputStream = new Scanner(mSocket.getInputStream());
+            mInputStream = new DataInputStream(mSocket.getInputStream());
             mOutputStream = new DataOutputStream(mSocket.getOutputStream());
 
             mExecutor.submit((Runnable) this::receive);
@@ -71,9 +72,13 @@ public class TCPClient {
         }
     }
     public void receive(){
-        while(mInputStream.hasNext()) {
-            mOnReceiveData.ifPresent(c -> c.accept(mInputStream.nextLine()));
-        }
+        mOnReceiveData.ifPresent(c -> {
+            try {
+                c.accept(Message.parseDelimitedFrom(mInputStream));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
 

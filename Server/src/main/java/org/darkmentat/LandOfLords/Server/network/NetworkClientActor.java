@@ -7,6 +7,12 @@ import akka.io.TcpMessage;
 import akka.japi.pf.ReceiveBuilder;
 import akka.util.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.darkmentat.LandOfLords.Common.NetMessagesToClient;
+import org.darkmentat.LandOfLords.Common.utils.FakeOutputStream;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.*;
 import static org.darkmentat.LandOfLords.Server.network.FrontNetworkActor.*;
@@ -63,7 +69,14 @@ public class NetworkClientActor extends AbstractActor {
     private void handleReceivedMessage(Message message) {
         switch (message.getType()){
             case PING:
-                mTcpSocket.tell(TcpMessage.write(ByteString.fromArray(("[" + mLogin + "] echo ping\n").getBytes())), self());
+                try {
+                    // Dirty hack to write delimited message to byte array
+                    FakeOutputStream fakeOutputStream = new FakeOutputStream();
+                    NetMessagesToClient.Message.newBuilder().setType(NetMessagesToClient.Type.PING).build().writeDelimitedTo(fakeOutputStream);
+                    mTcpSocket.tell(TcpMessage.write(ByteString.fromArray(fakeOutputStream.getByteArray())), self());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
                 System.out.println("ping");
                 break;
