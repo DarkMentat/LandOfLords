@@ -37,9 +37,9 @@ public class NetworkClientActor extends AbstractActor {
         }
     }
     private void onReceivedData(Tcp.Received received) {
-        String data = received.data().utf8String();
+        String data = received.data().utf8String().trim();
 
-        if(data.matches("login .+\n$")){
+        if(data.matches("login .+$")){
             mLogin = data.substring(6).trim();
 
             context().parent().tell(new FrontNetworkActor.LoginClientActor(mLogin, self()), self());

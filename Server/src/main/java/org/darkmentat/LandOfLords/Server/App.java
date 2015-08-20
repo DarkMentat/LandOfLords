@@ -22,34 +22,6 @@ public class App {
 
         ActorRef networking = system.actorOf(Props.create(FrontNetworkActor.class), "networking");
 
-        Scanner sc = new Scanner(System.in);
-        while (sc.hasNext()) {
-            String f = sc.nextLine();
-            if (f.equals("exit")) break;
-            if (f.matches("2login .+: .+$")){
-                Pattern pattern = Pattern.compile("2login (.+): (.+)");
-                Matcher matcher = pattern.matcher(f);
-
-                if (matcher.find()) {
-                    String login = matcher.group(1);
-                    String msg = matcher.group(2);
-
-                    Inbox inbox = Inbox.create(system);
-                    inbox.send(networking, new FrontNetworkActor.GetClientActor(login));
-                    ActorRef client = (ActorRef) inbox.receive(Duration.create(1, TimeUnit.SECONDS));
-
-                    client.tell(new NetworkClientActor.SendToClient(msg), ActorRef.noSender());
-                }
-            }
-        }
-
-        Test.Car car = Test.Car.newBuilder().setColor("red").setModel("lalka").setType(Test.Car.BodyType.sedan)
-                .setYear(1337).build();
-
-        byte[] bytes = car.toByteArray();
-
-        Test.Car car2 = Test.Car.parseFrom(bytes);
-
-        system.terminate();
+//        system.terminate();
     }
 }
