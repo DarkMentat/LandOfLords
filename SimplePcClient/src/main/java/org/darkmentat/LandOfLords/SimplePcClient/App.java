@@ -20,6 +20,12 @@ public class App {
             @Override public void onReceive(NetMessagesToClient.PingClient ping) {
                 System.out.println("ping");
             }
+            @Override public void onReceive(NetMessagesToClient.PlayerUnitState state) {
+                System.out.println(state);
+            }
+            @Override public void onClose() {
+                System.out.println("closing socket");
+            }
         });
 
         client.connect();
@@ -43,6 +49,10 @@ public class App {
 
             if(split.length == 1 && split[0].equals("ping")){
                 client.send(PingServer.newBuilder().build());
+            }
+
+            if(split.length == 1 && split[0].equals("spawn")){
+                client.send(SpawnPlayerUnit.newBuilder().build());
             }
         }
 
