@@ -2,4 +2,5 @@ target/
 .idea/
 Server/Server.iml
 SimplePcClient/SimplePcClient.iml
-
+Common/Common.iml
+gen/
