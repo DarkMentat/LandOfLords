@@ -3,8 +3,11 @@ package org.darkmentat.LandOfLords.Common;
 option java_package = "org.darkmentat.LandOfLords.Common";
 option java_outer_classname = "NetMessagesToClient";
 
-enum Type { PING = 1; LOGIN = 2; REGISTER = 3; }
+enum TypeToClient { PING_CLIENT = 2; }
 
-message Message {
-    required Type type = 1;
+message PingClient {}
+message MessageToClient {
+    required TypeToClient type = 1;
+
+    optional PingClient ping = 2;
 }

@@ -7,12 +7,12 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Optional;
-import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
+import java.util.concurrent.TimeUnit;
 
 import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.*;
+import static org.darkmentat.LandOfLords.Common.NetMessagesToClient.*;
 
 public class TCPClient {
     private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
@@ -24,19 +24,15 @@ public class TCPClient {
     private DataInputStream mInputStream;
     private DataOutputStream mOutputStream;
 
-    private Optional<Consumer<Message>> mOnReceiveData = Optional.empty();
-    private Optional<Consumer<Exception>> mOnError = Optional.empty();
+    private Optional<TCPClientListener> mClientListener = Optional.empty();
 
     public TCPClient(String host, int port) {
         mHost = host;
         mPort = port;
     }
 
-    public void setOnReceiveData(Consumer<Message> onReceiveData) {
-        mOnReceiveData = Optional.of(onReceiveData);
-    }
-    public void setOnError(Consumer<Exception> onError) {
-        mOnError = Optional.of(onError);
+    public void setListener(TCPClientListener listener) {
+        mClientListener = Optional.of(listener);
     }
 
     public void connect(){
@@ -48,19 +44,19 @@ public class TCPClient {
             mExecutor.submit((Runnable) this::receive);
         }
         catch (IOException e) {
-            mOnError.ifPresent(c -> c.accept(e));
+            mClientListener.ifPresent(c -> c.onError(e));
         }
     }
     public void close(){
         if (mSocket == null) return;
 
         try {
-            mSocket.getInputStream().close();
             mSocket.close();
             mExecutor.shutdownNow();
+            mExecutor.awaitTermination(100, TimeUnit.MICROSECONDS);
         }
         catch (Exception e) {
-            mOnError.ifPresent(c -> c.accept(e));
+            mClientListener.ifPresent(c -> c.onError(e));
         }
     }
 
@@ -68,28 +64,38 @@ public class TCPClient {
         try {
             packMessage(message).writeTo(mOutputStream);
         } catch (IOException e) {
-            mOnError.ifPresent(c -> c.accept(e));
+            mClientListener.ifPresent(c -> c.onError(e));
         }
     }
     public void receive(){
-        mOnReceiveData.ifPresent(c -> {
-            try {
-                c.accept(Message.parseDelimitedFrom(mInputStream));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+        while (!Thread.currentThread().isInterrupted()) {
+            mClientListener.ifPresent(client -> {
+                try {
+                    unpackMessageToListener(MessageToClient.parseDelimitedFrom(mInputStream), client);
+                } catch (IOException e) {
+                    if(!mSocket.isClosed()) // I have no idea how to close socket without exception
+                        client.onError(e);
+                }
+            });
+        }
     }
 
 
-    private GeneratedMessage packMessage(GeneratedMessage msg){
+    private MessageToServer packMessage(GeneratedMessage msg){
 
-        if (msg == null) return Message.newBuilder().setType(Type.PING).build();
-        if (msg instanceof Login) return Message.newBuilder().setType(Type.LOGIN).setLogin((Login) msg).build();
-        if (msg instanceof Register) return Message.newBuilder().setType(Type.REGISTER).setRegister((Register) msg).build();
+        if (msg instanceof PingServer) return MessageToServer.newBuilder().setType(TypeToServer.PING_SERVER).build();
+        if (msg instanceof Login) return MessageToServer.newBuilder().setType(TypeToServer.LOGIN).setLogin((Login) msg).build();
+        if (msg instanceof Register) return MessageToServer.newBuilder().setType(TypeToServer.REGISTER).setRegister((Register) msg).build();
 
 
         throw new IllegalArgumentException("message must be from net_messages_to_server.proto");
+    }
+    private void unpackMessageToListener(MessageToClient msg, TCPClientListener listener){
+        switch (msg.getType()) {
+            case PING_CLIENT:
+                listener.onReceive(msg.getPing());
+                break;
+        }
     }
 }
 

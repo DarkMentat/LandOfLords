@@ -6,25 +6,17 @@ import akka.io.Tcp;
 import akka.io.TcpMessage;
 import akka.japi.pf.ReceiveBuilder;
 import akka.util.ByteString;
+import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.darkmentat.LandOfLords.Common.NetMessagesToClient;
 import org.darkmentat.LandOfLords.Common.utils.FakeOutputStream;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 
+import static org.darkmentat.LandOfLords.Common.NetMessagesToClient.*;
 import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.*;
 import static org.darkmentat.LandOfLords.Server.network.FrontNetworkActor.*;
 
 public class NetworkClientActor extends AbstractActor {
-    public static class SendToClient {
-        public final String Data;
-
-        public SendToClient(String data) {
-            Data = data;
-        }
-    }
 
     private final ActorRef mTcpSocket;
     public String mLogin;
@@ -35,7 +27,7 @@ public class NetworkClientActor extends AbstractActor {
         receive(ReceiveBuilder
                 .match(Tcp.Received.class, this::onReceivedData)
                 .match(Tcp.ConnectionClosed.class, this::onConnectionClosed)
-                .match(SendToClient.class, this::onSendToClient)
+                .match(GeneratedMessage.class, this::onSendToClient)
                 .build());
     }
 
@@ -52,7 +44,7 @@ public class NetworkClientActor extends AbstractActor {
         byte[] data = received.data().toArray();
 
         try {
-            Message message = Message.parseFrom(data);
+            MessageToServer message = MessageToServer.parseFrom(data);
             handleReceivedMessage(message);
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
@@ -62,21 +54,14 @@ public class NetworkClientActor extends AbstractActor {
     private void onConnectionClosed(Tcp.ConnectionClosed closed) {
         context().stop(self());
     }
-    private void onSendToClient(SendToClient data) {
-        mTcpSocket.tell(TcpMessage.write(ByteString.fromArray((data.Data + "\n").getBytes())), self());
+    private void onSendToClient(GeneratedMessage data) {
+        mTcpSocket.tell(TcpMessage.write(toByteString(packMessage(data))), self());
     }
 
-    private void handleReceivedMessage(Message message) {
+    private void handleReceivedMessage(MessageToServer message) {
         switch (message.getType()){
-            case PING:
-                try {
-                    // Dirty hack to write delimited message to byte array
-                    FakeOutputStream fakeOutputStream = new FakeOutputStream();
-                    NetMessagesToClient.Message.newBuilder().setType(NetMessagesToClient.Type.PING).build().writeDelimitedTo(fakeOutputStream);
-                    mTcpSocket.tell(TcpMessage.write(ByteString.fromArray(fakeOutputStream.getByteArray())), self());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            case PING_SERVER:
+                pingClient();
 
                 System.out.println("ping");
                 break;
@@ -86,7 +71,6 @@ public class NetworkClientActor extends AbstractActor {
                 mLogin = login.getLogin();
 
                 context().parent().tell(new LoginClientActor(mLogin, self()), self());
-                mTcpSocket.tell(TcpMessage.write(ByteString.fromArray(("Hello, " + mLogin + "\n").getBytes())), self());
 
                 System.out.println(login);
                 break;
@@ -95,5 +79,31 @@ public class NetworkClientActor extends AbstractActor {
                 System.out.println(message.getRegister());
                 break;
         }
+    }
+
+    private void pingClient(){
+        try {
+            // Dirty hack to write delimited message to byte array
+            FakeOutputStream fakeOutputStream = new FakeOutputStream();
+            MessageToClient.newBuilder().setType(TypeToClient.PING_CLIENT).build().writeDelimitedTo(fakeOutputStream);
+            mTcpSocket.tell(TcpMessage.write(toByteString(fakeOutputStream)), self());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private ByteString toByteString(FakeOutputStream fos){
+        return ByteString.fromArray(fos.getByteArray());
+    }
+    private ByteString toByteString(GeneratedMessage msg){
+        return ByteString.fromArray(msg.toByteArray());
+    }
+
+    private MessageToClient packMessage(GeneratedMessage msg){
+
+        if (msg == null) return MessageToClient.newBuilder().setType(TypeToClient.PING_CLIENT).build();
+
+
+        throw new IllegalArgumentException("message must be from net_messages_to_server.proto");
     }
 }

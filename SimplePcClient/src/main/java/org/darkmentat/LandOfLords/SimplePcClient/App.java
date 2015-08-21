@@ -1,6 +1,8 @@
 package org.darkmentat.LandOfLords.SimplePcClient;
 
+import org.darkmentat.LandOfLords.Common.NetMessagesToClient;
 import org.darkmentat.LandOfLords.SimplePcClient.network.TCPClient;
+import org.darkmentat.LandOfLords.SimplePcClient.network.TCPClientListener;
 
 import java.util.Scanner;
 
@@ -11,8 +13,14 @@ public class App {
 
         TCPClient client = new TCPClient("localhost", 8080);
 
-        client.setOnError(System.out::println);
-        client.setOnReceiveData(System.out::println);
+        client.setListener(new TCPClientListener() {
+            @Override public void onError(Exception exception) {
+                exception.printStackTrace();
+            }
+            @Override public void onReceive(NetMessagesToClient.PingClient ping) {
+                System.out.println("ping");
+            }
+        });
 
         client.connect();
 
@@ -34,7 +42,7 @@ public class App {
             }
 
             if(split.length == 1 && split[0].equals("ping")){
-                client.send(null);
+                client.send(PingServer.newBuilder().build());
             }
         }
 
