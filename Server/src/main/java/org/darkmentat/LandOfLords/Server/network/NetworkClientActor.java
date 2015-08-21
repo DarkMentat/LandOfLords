@@ -9,6 +9,7 @@ import akka.util.ByteString;
 import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.darkmentat.LandOfLords.Common.utils.FakeOutputStream;
+import org.darkmentat.LandOfLords.Server.gameMechanics.GameMechanicsActor;
 
 import java.io.IOException;
 
@@ -76,6 +77,9 @@ public class NetworkClientActor extends AbstractActor {
                 break;
 
             case REGISTER:
+                context().actorFor(GameMechanicsActor.ADDRESS)
+                        .tell(new GameMechanicsActor.StartUserGameMechanicsMsg(message.getRegister().getLogin()), self());
+
                 System.out.println(message.getRegister());
                 break;
         }

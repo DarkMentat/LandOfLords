@@ -35,6 +35,8 @@ public class FrontNetworkActor extends AbstractActor {
         }
     }
 
+    public static final String ADDRESS = "akka://LandOfLordsServer/user/networking";
+
     private HashMap<String, ActorRef> mClientActors = new HashMap<>();
 
     public FrontNetworkActor() {
