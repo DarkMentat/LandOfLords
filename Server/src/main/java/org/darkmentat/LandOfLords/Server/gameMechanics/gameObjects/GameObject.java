@@ -1,9 +1,26 @@
 package org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects;
 
-public abstract class GameObject {
-    public final String OwnerLogin;
+import org.luaj.vm2.LuaValue;
 
-    public GameObject(String ownerLogin) {
+public class GameObject {
+    public enum GameObjectState { MOVING, STAYING, WORKING, WAITING }
+
+    public final String OwnerLogin;
+    public final String Name;
+
+    public GameObjectState BasicState = GameObjectState.STAYING;
+
+    public LuaValue Parameters;
+    public LuaValue Skills;
+    public LuaValue Items;
+    public LuaValue FullState;
+    public LuaValue Behaviour;
+    public LuaValue Stimuli;
+
+    // public String Memory;
+
+    public GameObject(String ownerLogin, String name) {
         OwnerLogin = ownerLogin;
+        Name = name;
     }
 }

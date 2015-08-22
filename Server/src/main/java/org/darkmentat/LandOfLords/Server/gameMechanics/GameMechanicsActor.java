@@ -30,8 +30,7 @@ public class GameMechanicsActor extends AbstractActor {
                 .build());
 
         ActorSystem system = context().system();
-        system.scheduler().schedule(HALF_HEARTBEAT, HEARTBEAT, (Runnable) this::onHeartbeatTickMoving, system.dispatcher());
-        system.scheduler().schedule(HEARTBEAT, HEARTBEAT, (Runnable) this::onHeartbeatTickActing, system.dispatcher());
+        system.scheduler().schedule(HALF_HEARTBEAT, HEARTBEAT, (Runnable) this::onHeartbeatTick, system.dispatcher());
     }
 
     private void onStartUserGameMechanics(StartUserGameMechanicsMsg msg) {
@@ -39,10 +38,7 @@ public class GameMechanicsActor extends AbstractActor {
             getContext().actorOf(Props.create(UserGameMechanicsActor.class, msg.Login), "userGM_" + msg.Login);
         }
     }
-    private void onHeartbeatTickMoving(){
-        getContext().getChildren().forEach(actor -> actor.tell(new HeartbeatTick(HeartbeatTick.HeartbeatMission.MOVING), self()));
-    }
-    private void onHeartbeatTickActing(){
-        getContext().getChildren().forEach(actor -> actor.tell(new HeartbeatTick(HeartbeatTick.HeartbeatMission.ACTING), self()));
+    private void onHeartbeatTick(){
+        getContext().getChildren().forEach(actor -> actor.tell(new HeartbeatTick(), self()));
     }
 }

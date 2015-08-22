@@ -6,13 +6,10 @@ import akka.japi.pf.ReceiveBuilder;
 import com.google.protobuf.GeneratedMessage;
 import org.darkmentat.LandOfLords.Common.NetMessagesToClient;
 import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.GameObject;
-import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Movable;
-import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Positionable;
-import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Unit;
+import org.luaj.vm2.Globals;
+import org.luaj.vm2.lib.jse.JsePlatform;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.SpawnPlayerUnit;
 import static org.darkmentat.LandOfLords.Server.network.NetworkClientActor.LoginClientActor;
@@ -20,56 +17,55 @@ import static org.darkmentat.LandOfLords.Server.network.NetworkClientActor.UnLog
 
 
 public class UserGameMechanicsActor extends AbstractActor {
-    public static class HeartbeatTick {
-        public enum HeartbeatMission { MOVING, ACTING }
-
-        public final HeartbeatMission Mission;
-
-        public HeartbeatTick(HeartbeatMission mission) {
-            Mission = mission;
-        }
-    }
+    public static class HeartbeatTick {}
 
     public static String getPath(String login){
         return GameMechanicsActor.ADDRESS + "/userGM_" + login;
     }
 
     private final String mLogin;
+    private final Globals mLuaGlobals;
 
     private Optional<ActorRef> mNetClient = Optional.empty();
 
-    private Map<String, GameObject> mActiveGameObjects = new HashMap<>();
-    private Optional<Unit> mPlayerUnit = Optional.empty();
+    private Optional<GameObject> mPlayerUnit = Optional.empty();
+
+    private Set<GameObject> mMovingGameObjects = new HashSet<>();
 
     public UserGameMechanicsActor(String login) {
         mLogin = login;
 
         receive(ReceiveBuilder
                 .match(HeartbeatTick.class, this::onHeartbeatTick)
-                .match(GameObject[].class, this::onGameObjectsReceived)
                 .match(LoginClientActor.class, this::onLoginNetClient)
                 .match(UnLoginClientActor.class, this::onUnLoginNetClient)
                 .match(SpawnPlayerUnit.class, this::onSpawnPlayerUnit)
                 .build());
 
+        mLuaGlobals = JsePlatform.standardGlobals();
     }
     private void onHeartbeatTick(HeartbeatTick tick) {
-        switch (tick.Mission) {
-            case MOVING:
-                mActiveGameObjects.values().forEach(go -> {if(go instanceof Movable) ((Movable)go).move();});
-                mPlayerUnit.ifPresent(Movable::move);
-                break;
-            case ACTING:
-                mNetClient.ifPresent(net->mPlayerUnit.ifPresent(u -> net.tell(getPlayerUnitState(), self())));
-                break;
-        }
+        mMovingGameObjects.forEach(go -> go.FullState.invokemethod("onTick"));
+        mMovingGameObjects.removeIf(go -> go.BasicState != GameObject.GameObjectState.MOVING);
+
+        mPlayerUnit.ifPresent(unit -> mNetClient.ifPresent(a -> a.tell(makeStateMsg(unit), self())));
     }
 
     private void onSpawnPlayerUnit(SpawnPlayerUnit msg) {
-        Unit unit = new Unit(mLogin,new Positionable.Vector(msg.getX(),msg.getY()));
-        unit.setDirection(new Positionable.Vector(msg.getDx(), msg.getDy()));
+        GameObject playerUnit = new GameObject(mLogin, "Player");
+        playerUnit.BasicState = GameObject.GameObjectState.MOVING;
 
-        mPlayerUnit = Optional.of(unit);
+        playerUnit.Parameters = mLuaGlobals.load("return {strength = 5, intelligence = 7, agility = 6}").call();
+        playerUnit.Skills = mLuaGlobals.load("return {moving_afoot = 10}").call();
+        playerUnit.Items = mLuaGlobals.load("return {'knife'}").call();
+        playerUnit.FullState = mLuaGlobals.load("state = { x = 0, y = 0, speed = 1, destination_x = 10, destination_y = 0 } function state:onTick() self.x = self.x + 1 end return state").call();
+
+        playerUnit.Behaviour = mLuaGlobals.load("return function(stimulus)  end").call();
+        playerUnit.Stimuli = mLuaGlobals.load("return {}").call();
+
+        mMovingGameObjects.add(playerUnit);
+
+        mPlayerUnit = Optional.of(playerUnit);
     }
 
     private void onLoginNetClient(LoginClientActor login) {
@@ -79,21 +75,10 @@ public class UserGameMechanicsActor extends AbstractActor {
         mNetClient = Optional.empty();
     }
 
-    private void onGameObjectsReceived(GameObject[] gameObjects) {
-        for (GameObject go : gameObjects) {
-            if (!mActiveGameObjects.containsKey(go.OwnerLogin)) {
-                mActiveGameObjects.put(go.OwnerLogin, go);
-            }
-        }
-    }
-
-
-    private GeneratedMessage getPlayerUnitState(){
+    private GeneratedMessage makeStateMsg(GameObject player){
         return NetMessagesToClient.PlayerUnitState.newBuilder()
-                .setX(mPlayerUnit.get().getPosition().X)
-                .setY(mPlayerUnit.get().getPosition().Y)
-                .setDx(mPlayerUnit.get().getDirection().X)
-                .setDy(mPlayerUnit.get().getDirection().Y)
+                .setX(player.FullState.get("x").toint())
+                .setY(player.FullState.get("y").toint())
                 .build();
     }
 }
