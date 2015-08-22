@@ -45,23 +45,16 @@ public class UserGameMechanicsActor extends AbstractActor {
         mLuaGlobals = JsePlatform.standardGlobals();
     }
     private void onHeartbeatTick(HeartbeatTick tick) {
-        mMovingGameObjects.forEach(go -> go.FullState.invokemethod("onTick"));
         mMovingGameObjects.removeIf(go -> go.BasicState != GameObject.GameObjectState.MOVING);
+        mMovingGameObjects.forEach(go -> go.GameObjectScript.get("State").invokemethod("move"));
 
         mPlayerUnit.ifPresent(unit -> mNetClient.ifPresent(a -> a.tell(makeStateMsg(unit), self())));
     }
 
     private void onSpawnPlayerUnit(SpawnPlayerUnit msg) {
-        GameObject playerUnit = new GameObject(mLogin, "Player");
-        playerUnit.BasicState = GameObject.GameObjectState.MOVING;
+        String script = "src/main/lua/org.darkmentat.LandOfLords.Server.scripts/GameObjectPrototype.lua";
 
-        playerUnit.Parameters = mLuaGlobals.load("return {strength = 5, intelligence = 7, agility = 6}").call();
-        playerUnit.Skills = mLuaGlobals.load("return {moving_afoot = 10}").call();
-        playerUnit.Items = mLuaGlobals.load("return {'knife'}").call();
-        playerUnit.FullState = mLuaGlobals.load("state = { x = 0, y = 0, speed = 1, destination_x = 10, destination_y = 0 } function state:onTick() self.x = self.x + 1 end return state").call();
-
-        playerUnit.Behaviour = mLuaGlobals.load("return function(stimulus)  end").call();
-        playerUnit.Stimuli = mLuaGlobals.load("return {}").call();
+        GameObject playerUnit = new GameObject(mLogin, "Player", mLuaGlobals.loadfile(script).call());
 
         mMovingGameObjects.add(playerUnit);
 
@@ -77,8 +70,10 @@ public class UserGameMechanicsActor extends AbstractActor {
 
     private GeneratedMessage makeStateMsg(GameObject player){
         return NetMessagesToClient.PlayerUnitState.newBuilder()
-                .setX(player.FullState.get("x").toint())
-                .setY(player.FullState.get("y").toint())
+                .setX(player.GameObjectScript.get("State").get("X").toint())
+                .setY(player.GameObjectScript.get("State").get("Y").toint())
+                .setDx(player.GameObjectScript.get("State").get("DirectionX").toint())
+                .setDy(player.GameObjectScript.get("State").get("DirectionY").toint())
                 .build();
     }
 }
