@@ -6,11 +6,14 @@ import akka.japi.pf.ReceiveBuilder;
 import com.google.protobuf.GeneratedMessage;
 import org.darkmentat.LandOfLords.Common.NetMessagesToClient;
 import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.GameObject;
+import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Movable;
+import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.PlayerUnit;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.lib.jse.JsePlatform;
 
 import java.util.*;
 
+import static org.darkmentat.LandOfLords.Common.NetMessagesToClient.*;
 import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.SpawnPlayerUnit;
 import static org.darkmentat.LandOfLords.Server.network.NetworkClientActor.LoginClientActor;
 import static org.darkmentat.LandOfLords.Server.network.NetworkClientActor.UnLoginClientActor;
@@ -30,7 +33,7 @@ public class UserGameMechanicsActor extends AbstractActor {
 
     private Optional<GameObject> mPlayerUnit = Optional.empty();
 
-    private Set<GameObject> mMovingGameObjects = new HashSet<>();
+    private Set<Movable> mMovingGameObjects = new HashSet<>();
 
     public UserGameMechanicsActor(String login) {
         mLogin = login;
@@ -45,8 +48,8 @@ public class UserGameMechanicsActor extends AbstractActor {
         mLuaGlobals = JsePlatform.standardGlobals();
     }
     private void onHeartbeatTick(HeartbeatTick tick) {
-        mMovingGameObjects.removeIf(go -> go.BasicState != GameObject.GameObjectState.MOVING);
-        mMovingGameObjects.forEach(go -> go.GameObjectScript.get("State").invokemethod("move"));
+        mMovingGameObjects.removeIf(go -> go.getBasicState() != GameObject.GameObjectState.MOVING);
+        mMovingGameObjects.forEach(Movable::performMoving);
 
         mPlayerUnit.ifPresent(unit -> mNetClient.ifPresent(a -> a.tell(makeStateMsg(unit), self())));
     }
@@ -54,7 +57,7 @@ public class UserGameMechanicsActor extends AbstractActor {
     private void onSpawnPlayerUnit(SpawnPlayerUnit msg) {
         String script = "src/main/lua/org.darkmentat.LandOfLords.Server.scripts/GameObjectPrototype.lua";
 
-        GameObject playerUnit = new GameObject(mLogin, "Player", mLuaGlobals.loadfile(script).call());
+        PlayerUnit playerUnit = new PlayerUnit(mLogin, "Player", mLuaGlobals.loadfile(script).call());
 
         mMovingGameObjects.add(playerUnit);
 
@@ -69,11 +72,17 @@ public class UserGameMechanicsActor extends AbstractActor {
     }
 
     private GeneratedMessage makeStateMsg(GameObject player){
-        return NetMessagesToClient.PlayerUnitState.newBuilder()
-                .setX(player.GameObjectScript.get("State").get("X").toint())
-                .setY(player.GameObjectScript.get("State").get("Y").toint())
-                .setDx(player.GameObjectScript.get("State").get("DirectionX").toint())
-                .setDy(player.GameObjectScript.get("State").get("DirectionY").toint())
-                .build();
+        PlayerUnitState.Builder stateMsg = PlayerUnitState.newBuilder();
+
+        stateMsg.setGameObjectState(player.getBasicState().name());
+
+        for (Map.Entry<String, String> entry : player.getStateValues().entrySet()) {
+            stateMsg.addStateValue(PlayerUnitState.KeyValueTupple.newBuilder()
+                    .setKey(entry.getKey())
+                    .setValue(entry.getValue())
+                    .build());
+        }
+
+        return stateMsg.build();
     }
 }

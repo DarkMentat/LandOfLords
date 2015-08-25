@@ -22,6 +22,13 @@ GeneralSkills = {
                 state.X = x
                 state.Y = y
 
+                state.getStateValues = function(self)
+                    return {
+                        X = self.X,
+                        Y = self.Y
+                    }
+                end
+
                 return state
             end,
             Moving = function (x, y, dirX, dirY)
@@ -42,6 +49,15 @@ GeneralSkills = {
 
                     self.X = self.X + dx*speed
                     self.Y = self.Y + dy*speed
+                end
+
+                state.getStateValues = function(self)
+                    return {
+                        X = self.X,
+                        Y = self.Y,
+                        DirectionX = self.DirectionX,
+                        DirectionY = self.DirectionY
+                    }
                 end
 
                 return state
