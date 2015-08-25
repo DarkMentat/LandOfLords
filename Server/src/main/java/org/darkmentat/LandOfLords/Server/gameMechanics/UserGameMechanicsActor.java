@@ -55,7 +55,7 @@ public class UserGameMechanicsActor extends AbstractActor {
     }
 
     private void onSpawnPlayerUnit(SpawnPlayerUnit msg) {
-        String script = "src/main/lua/org.darkmentat.LandOfLords.Server.scripts/GameObjectPrototype.lua";
+        String script = "src/main/lua/org.darkmentat.LandOfLords.Server.scripts/PlayerUnit.lua";
 
         PlayerUnit playerUnit = new PlayerUnit(mLogin, "Player", mLuaGlobals.loadfile(script).call());
 
