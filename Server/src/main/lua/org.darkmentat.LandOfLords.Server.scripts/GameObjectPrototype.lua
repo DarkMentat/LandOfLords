@@ -15,8 +15,10 @@ GeneralSkills = {
         Id = 1,
 
         PossibleStates = {
-            Staying = function (x, y)
+            Staying = function (owner, x, y)
                 local state = {}
+
+                state.Owner = owner
 
                 state.GameObjectState = 'STAYING'
                 state.X = x
@@ -31,8 +33,10 @@ GeneralSkills = {
 
                 return state
             end,
-            Moving = function (x, y, dirX, dirY)
+            Moving = function (owner, x, y, dirX, dirY)
                 local state = {}
+
+                state.Owner = owner
 
                 state.GameObjectState = 'MOVING'
                 state.X = x
@@ -49,6 +53,10 @@ GeneralSkills = {
 
                     self.X = self.X + dx*speed
                     self.Y = self.Y + dy*speed
+
+                    if len < 2 then
+                        self.Owner.State = self.Owner.Skills[1].PossibleStates.Staying(self.Owner, self.X, self.Y)
+                    end
                 end
 
                 state.getStateValues = function(self)
@@ -70,7 +78,7 @@ function PlayerUnit()
     local unit = GameObject()
     unit.Skills[1] = GeneralSkills.Moving
     -- unit.State = unit.Skills[1].PossibleStates.Staying(0,0)
-    unit.State = unit.Skills[1].PossibleStates.Moving(0,0, 100, 100)
+    unit.State = unit.Skills[1].PossibleStates.Moving(unit, 0,0, 10, 10)
 
     return unit
 end
