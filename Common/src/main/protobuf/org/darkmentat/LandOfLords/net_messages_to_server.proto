@@ -3,7 +3,7 @@ package org.darkmentat.LandOfLords.Common;
 option java_package = "org.darkmentat.LandOfLords.Common";
 option java_outer_classname = "NetMessagesToServer";
 
-enum TypeToServer { PING_SERVER = 2; LOGIN = 3; REGISTER = 4; }
+enum TypeToServer { PING_SERVER = 2; LOGIN = 3; REGISTER = 4; SPAWN_PLAYER_UNIT = 5;}
 
 message PingServer {}
 message Login {
@@ -13,6 +13,12 @@ message Register {
     required string login = 1;
     required string email = 2;
 }
+message SpawnPlayerUnit {
+    optional int32 x = 1 [default = 0];
+    optional int32 y = 2 [default = 0];
+    optional int32 dx = 3 [default = 0];
+    optional int32 dy = 4 [default = 0];
+}
 
 message MessageToServer {
     required TypeToServer type = 1;
@@ -20,4 +26,5 @@ message MessageToServer {
     optional PingServer ping = 2;
     optional Login login = 3;
     optional Register register = 4;
+    optional SpawnPlayerUnit spawnPlayerUnit = 5;
 }

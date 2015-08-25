@@ -73,6 +73,7 @@ public class TCPClient {
                 try {
                     unpackMessageToListener(MessageToClient.parseDelimitedFrom(mInputStream), client);
                 } catch (IOException e) {
+                    mClientListener.ifPresent(TCPClientListener::onClose);
                     if(!mSocket.isClosed()) // I have no idea how to close socket without exception
                         client.onError(e);
                 }
@@ -86,6 +87,7 @@ public class TCPClient {
         if (msg instanceof PingServer) return MessageToServer.newBuilder().setType(TypeToServer.PING_SERVER).build();
         if (msg instanceof Login) return MessageToServer.newBuilder().setType(TypeToServer.LOGIN).setLogin((Login) msg).build();
         if (msg instanceof Register) return MessageToServer.newBuilder().setType(TypeToServer.REGISTER).setRegister((Register) msg).build();
+        if (msg instanceof SpawnPlayerUnit) return MessageToServer.newBuilder().setType(TypeToServer.SPAWN_PLAYER_UNIT).setSpawnPlayerUnit((SpawnPlayerUnit) msg).build();
 
 
         throw new IllegalArgumentException("message must be from net_messages_to_server.proto");
@@ -94,6 +96,9 @@ public class TCPClient {
         switch (msg.getType()) {
             case PING_CLIENT:
                 listener.onReceive(msg.getPing());
+                break;
+            case PLAYER_UNIT_STATE:
+                listener.onReceive(msg.getPlayerUnitState());
                 break;
         }
     }

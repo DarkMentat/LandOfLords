@@ -8,7 +8,10 @@ import akka.japi.pf.ReceiveBuilder;
 import akka.util.ByteString;
 import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.darkmentat.LandOfLords.Common.NetMessagesToClient;
 import org.darkmentat.LandOfLords.Common.utils.FakeOutputStream;
+import org.darkmentat.LandOfLords.Server.gameMechanics.GameMechanicsActor;
+import org.darkmentat.LandOfLords.Server.gameMechanics.UserGameMechanicsActor;
 
 import java.io.IOException;
 
@@ -17,6 +20,22 @@ import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.*;
 import static org.darkmentat.LandOfLords.Server.network.FrontNetworkActor.*;
 
 public class NetworkClientActor extends AbstractActor {
+    public static class LoginClientActor {
+        public final String Login;
+        public final ActorRef Actor;
+
+        public LoginClientActor(String login, ActorRef actor) {
+            Login = login;
+            Actor = actor;
+        }
+    }
+    public static class UnLoginClientActor {
+        public final String Login;
+
+        public UnLoginClientActor(String login) {
+            Login = login;
+        }
+    }
 
     private final ActorRef mTcpSocket;
     public String mLogin;
@@ -36,9 +55,7 @@ public class NetworkClientActor extends AbstractActor {
 
         mTcpSocket.tell(TcpMessage.confirmedClose(), self());
 
-        if (mLogin != null) {
-            context().parent().tell(new UnLoginClientActor(mLogin), self());
-        }
+        unlogin();
     }
     private void onReceivedData(Tcp.Received received) {
         byte[] data = received.data().toArray();
@@ -55,7 +72,7 @@ public class NetworkClientActor extends AbstractActor {
         context().stop(self());
     }
     private void onSendToClient(GeneratedMessage data) {
-        mTcpSocket.tell(TcpMessage.write(toByteString(packMessage(data))), self());
+        mTcpSocket.tell(TcpMessage.write(serializeDelimitedMessage(packMessage(data))), self());
     }
 
     private void handleReceivedMessage(MessageToServer message) {
@@ -67,28 +84,38 @@ public class NetworkClientActor extends AbstractActor {
                 break;
 
             case LOGIN:
-                Login login = message.getLogin();
-                mLogin = login.getLogin();
+                login(message.getLogin().getLogin());
 
-                context().parent().tell(new LoginClientActor(mLogin, self()), self());
-
-                System.out.println(login);
+                System.out.println(mLogin);
                 break;
 
             case REGISTER:
+                context().actorFor(GameMechanicsActor.ADDRESS)
+                        .tell(new GameMechanicsActor.StartUserGameMechanicsMsg(message.getRegister().getLogin()), self());
+
                 System.out.println(message.getRegister());
+                break;
+
+            case SPAWN_PLAYER_UNIT:
+                context().actorFor(UserGameMechanicsActor.getPath(mLogin)).tell(message.getSpawnPlayerUnit(), self());
                 break;
         }
     }
 
     private void pingClient(){
-        try {
-            // Dirty hack to write delimited message to byte array
-            FakeOutputStream fakeOutputStream = new FakeOutputStream();
-            MessageToClient.newBuilder().setType(TypeToClient.PING_CLIENT).build().writeDelimitedTo(fakeOutputStream);
-            mTcpSocket.tell(TcpMessage.write(toByteString(fakeOutputStream)), self());
-        } catch (IOException e) {
-            e.printStackTrace();
+        onSendToClient(PingClient.newBuilder().build());
+    }
+
+    private void login(String login){
+        mLogin = login;
+
+        context().actorFor(UserGameMechanicsActor.getPath(mLogin)).tell(new LoginClientActor(mLogin, self()), self());
+    }
+    private void unlogin(){
+        if (mLogin != null) {
+            context().actorFor(UserGameMechanicsActor.getPath(mLogin)).tell(new UnLoginClientActor(mLogin), self());
+
+            mLogin = null;
         }
     }
 
@@ -101,9 +128,22 @@ public class NetworkClientActor extends AbstractActor {
 
     private MessageToClient packMessage(GeneratedMessage msg){
 
-        if (msg == null) return MessageToClient.newBuilder().setType(TypeToClient.PING_CLIENT).build();
-
+        if (msg instanceof PingClient) return MessageToClient.newBuilder().setPing((PingClient)msg).setType(TypeToClient.PING_CLIENT).build();
+        if (msg instanceof PlayerUnitState)  return MessageToClient.newBuilder().setPlayerUnitState((PlayerUnitState) msg).setType(TypeToClient.PLAYER_UNIT_STATE).build();
 
         throw new IllegalArgumentException("message must be from net_messages_to_server.proto");
+    }
+    private ByteString serializeDelimitedMessage(MessageToClient msg){
+
+        // Dirty hack to write delimited message to byte array
+        FakeOutputStream fakeOutputStream = new FakeOutputStream();
+
+        try {
+            msg.writeDelimitedTo(fakeOutputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return toByteString(fakeOutputStream);
     }
 }
