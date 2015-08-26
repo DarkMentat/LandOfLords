@@ -22,11 +22,7 @@ public class App {
             }
             @Override public void onReceive(NetMessagesToClient.PlayerUnitState state) {
                 System.out.print(state.getGameObjectState());
-                System.out.print("\tX: ");
-                System.out.print(state.getStateValueList().stream().filter(kv -> kv.getKey().equals("X")).findAny().get().getValue());
-                System.out.print(" Y: ");
-                System.out.print(state.getStateValueList().stream().filter(kv -> kv.getKey().equals("Y")).findAny().get().getValue());
-                System.out.println();
+                System.out.println("\tX: " + state.getX() + " Y: " + state.getY());
             }
             @Override public void onClose() {
                 System.out.println("closing socket");

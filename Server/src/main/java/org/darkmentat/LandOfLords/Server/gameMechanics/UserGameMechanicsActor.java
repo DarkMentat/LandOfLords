@@ -4,6 +4,7 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.japi.pf.ReceiveBuilder;
 import com.google.protobuf.GeneratedMessage;
+import javafx.geometry.Pos;
 import org.darkmentat.LandOfLords.Common.NetMessagesToClient;
 import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.GameObject;
 import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Movable;
@@ -77,17 +78,8 @@ public class UserGameMechanicsActor extends AbstractActor {
 
         stateMsg.setGameObjectState(player.getBasicState().name());
 
-        if(player instanceof Positionable) {
-            stateMsg.addStateValue(PlayerUnitState.KeyValueTupple.newBuilder()
-                    .setKey("X")
-                    .setValue(String.valueOf(((Positionable) player).getX()))
-                    .build());
-
-            stateMsg.addStateValue(PlayerUnitState.KeyValueTupple.newBuilder()
-                    .setKey("Y")
-                    .setValue(String.valueOf(((Positionable) player).getY()))
-                    .build());
-        }
+        stateMsg.setX(((Positionable) player).getX());
+        stateMsg.setY(((Positionable) player).getY());
 
         for (Map.Entry<String, String> entry : player.getStateValues().entrySet()) {
             stateMsg.addStateValue(PlayerUnitState.KeyValueTupple.newBuilder()
