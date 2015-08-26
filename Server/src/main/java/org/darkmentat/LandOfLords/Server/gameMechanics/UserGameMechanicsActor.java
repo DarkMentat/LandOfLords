@@ -4,8 +4,6 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.japi.pf.ReceiveBuilder;
 import com.google.protobuf.GeneratedMessage;
-import javafx.geometry.Pos;
-import org.darkmentat.LandOfLords.Common.NetMessagesToClient;
 import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.GameObject;
 import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Movable;
 import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.PlayerUnit;
@@ -13,9 +11,12 @@ import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Positionable;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.lib.jse.JsePlatform;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
-import static org.darkmentat.LandOfLords.Common.NetMessagesToClient.*;
+import static org.darkmentat.LandOfLords.Common.NetMessagesToClient.PlayerUnitState;
 import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.SpawnPlayerUnit;
 import static org.darkmentat.LandOfLords.Server.network.NetworkClientActor.LoginClientActor;
 import static org.darkmentat.LandOfLords.Server.network.NetworkClientActor.UnLoginClientActor;
@@ -80,6 +81,16 @@ public class UserGameMechanicsActor extends AbstractActor {
 
         stateMsg.setX(((Positionable) player).getX());
         stateMsg.setY(((Positionable) player).getY());
+
+        PlayerUnitState.CellInfo.Builder cellBuilder = PlayerUnitState.CellInfo.newBuilder()
+                .setDescription(GameMap.Instance.getCellDescription((Positionable) player));
+
+        for (Positionable p : GameMap.Instance.getPositionablesOnCell((Positionable) player)) {
+            GameObject go = ((GameObject) p);
+            cellBuilder.addUnits("[" + go.OwnerLogin + "] " + go.Name);
+        }
+
+        stateMsg.addCellsAround(cellBuilder);
 
         for (Map.Entry<String, String> entry : player.getStateValues().entrySet()) {
             stateMsg.addStateValue(PlayerUnitState.KeyValueTupple.newBuilder()

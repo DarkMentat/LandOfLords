@@ -8,7 +8,8 @@ enum TypeToClient { PING_CLIENT = 2; PLAYER_UNIT_STATE = 3;}
 message PingClient {}
 message PlayerUnitState {
     message CellInfo {
-
+        required string description = 1;
+        repeated string units = 2;
     }
     message KeyValueTupple {
         required string key = 1;

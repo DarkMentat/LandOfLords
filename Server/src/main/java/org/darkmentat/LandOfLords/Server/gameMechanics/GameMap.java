@@ -25,6 +25,13 @@ public class GameMap {
         }
     }
 
+    public String getCellDescription(Positionable object) {
+        return getCellDescription(object.getX(), object.getY());
+    }
+    public Positionable[] getPositionablesOnCell(Positionable object) {
+        return getPositionablesOnCell(object.getX(), object.getY());
+    }
+
     public String getCellDescription(int x, int y) {
         return mCellDescriptions.get(coordToString(x, y));
     }
