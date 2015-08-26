@@ -9,8 +9,12 @@ import java.util.TreeMap;
 import static org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.GameObject.*;
 
 public interface WithLuaState {
-    LuaValue getState();
 
+    LuaValue getGameObjectScript();
+
+    default LuaValue getState(){
+        return getGameObjectScript().get("State");
+    }
     default GameObjectState getBasicState(){
         return GameObjectState.valueOf(getState().get("GameObjectState").tojstring());
     }

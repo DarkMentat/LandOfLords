@@ -1,7 +1,8 @@
 package org.darkmentat.LandOfLords.Server.gameMechanics;
 
-import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.GameObject;
+import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Positionable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,17 +11,40 @@ public class GameMap {
     public static GameMap Instance = new GameMap();
 
     private Map<String, String> mCellDescriptions = new HashMap<>();
-    private Map<String, List<GameObject>> mGameObjectsInCells = new HashMap<>();
+    private Map<String, List<Positionable>> mPositionablesInCells = new HashMap<>();
+    private Map<Positionable, String> mPositionablesCoordinates = new HashMap<>();
 
-    private GameMap() {}
+    private GameMap() {
+        for (int x = 0; x < 10; x++) {
+            for (int y = 0; y < 10; y++) {
+                String coords = coordToString(x, y);
+
+                mCellDescriptions.put(coords, "Some cell");
+                mPositionablesInCells.put(coords, new ArrayList<>());
+            }
+        }
+    }
 
     public String getCellDescription(int x, int y) {
-        return mCellDescriptions.get(coordToString(x,y));
+        return mCellDescriptions.get(coordToString(x, y));
     }
-    public GameObject[] getGameObjectsOnCell(int x, int y) {
-        List<GameObject> gameObjects = mGameObjectsInCells.get(coordToString(x, y));
+    public Positionable[] getPositionablesOnCell(int x, int y) {
+        List<Positionable> gameObjects = mPositionablesInCells.get(coordToString(x, y));
 
-        return gameObjects.toArray(new GameObject[gameObjects.size()]);
+        return gameObjects.toArray(new Positionable[gameObjects.size()]);
+    }
+
+    public void invalidatePositionableCoordinates(Positionable object){
+        String oldCoords = mPositionablesCoordinates.getOrDefault(object, "");
+
+        if(!oldCoords.isEmpty()){
+            mPositionablesCoordinates.remove(object);
+            mPositionablesInCells.get(oldCoords).remove(object);
+        }
+
+        String coords = coordToString(object.getX(), object.getY());
+        mPositionablesCoordinates.put(object, coords);
+        mPositionablesInCells.get(coords).add(object);
     }
 
     private String coordToString(int x, int y) {

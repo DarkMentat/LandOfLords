@@ -8,6 +8,7 @@ import org.darkmentat.LandOfLords.Common.NetMessagesToClient;
 import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.GameObject;
 import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Movable;
 import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.PlayerUnit;
+import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Positionable;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.lib.jse.JsePlatform;
 
@@ -75,6 +76,18 @@ public class UserGameMechanicsActor extends AbstractActor {
         PlayerUnitState.Builder stateMsg = PlayerUnitState.newBuilder();
 
         stateMsg.setGameObjectState(player.getBasicState().name());
+
+        if(player instanceof Positionable) {
+            stateMsg.addStateValue(PlayerUnitState.KeyValueTupple.newBuilder()
+                    .setKey("X")
+                    .setValue(String.valueOf(((Positionable) player).getX()))
+                    .build());
+
+            stateMsg.addStateValue(PlayerUnitState.KeyValueTupple.newBuilder()
+                    .setKey("Y")
+                    .setValue(String.valueOf(((Positionable) player).getY()))
+                    .build());
+        }
 
         for (Map.Entry<String, String> entry : player.getStateValues().entrySet()) {
             stateMsg.addStateValue(PlayerUnitState.KeyValueTupple.newBuilder()

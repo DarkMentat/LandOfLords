@@ -15,7 +15,7 @@ public class GameObject implements WithLuaState{
         GameObjectScript = script;
     }
 
-    public LuaValue getState(){
-        return GameObjectScript.get("State");
+    public LuaValue getGameObjectScript(){
+        return GameObjectScript;
     }
 }
