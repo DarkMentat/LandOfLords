@@ -18,10 +18,15 @@ public class App {
                 exception.printStackTrace();
             }
             @Override public void onReceive(NetMessagesToClient.PingClient ping) {
-                System.out.println("ping");
+                System.out.print("ping");
             }
             @Override public void onReceive(NetMessagesToClient.PlayerUnitState state) {
-                System.out.println(state);
+                System.out.print(state.getGameObjectState());
+                System.out.print("\tX: ");
+                System.out.print(state.getStateValueList().stream().filter(kv -> kv.getKey().equals("X")).findAny().get().getValue().substring(0,6));
+                System.out.print("\tY: ");
+                System.out.print(state.getStateValueList().stream().filter(kv -> kv.getKey().equals("Y")).findAny().get().getValue().substring(0, 6));
+                System.out.println();
             }
             @Override public void onClose() {
                 System.out.println("closing socket");
