@@ -1,7 +1,9 @@
 function createState(owner, name)
     return {
         Owner = owner,
-        GameObjectState = name
+        GameObjectState = name,
+
+        getStateValues = function() return {} end
     }
 end
 
@@ -14,10 +16,6 @@ Skills.Moving = {
         Staying = function (owner)
             local state = createState(owner, 'STAYING')
 
-            function state:getStateValues()
-                return {}
-            end
-
             return state
         end,
         Moving = function (owner, dirX, dirY)
@@ -25,7 +23,7 @@ Skills.Moving = {
             state.DirectionX = dirX
             state.DirectionY = dirY
 
-            function state:move()
+            function state:performMoving()
                 local speed = 1;
 
                 local len = math.sqrt((self.DirectionX-self.Owner.X)^2 + (self.DirectionY-self.Owner.Y)^2)

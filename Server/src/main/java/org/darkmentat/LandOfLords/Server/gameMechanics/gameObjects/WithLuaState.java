@@ -6,8 +6,6 @@ import org.luaj.vm2.LuaValue;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.GameObject.*;
-
 public interface WithLuaState {
 
     LuaValue getGameObjectScript();

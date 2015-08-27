@@ -4,12 +4,7 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.japi.pf.ReceiveBuilder;
 import com.google.protobuf.GeneratedMessage;
-import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.GameObject;
-import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Movable;
-import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.PlayerUnit;
-import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Positionable;
-import org.luaj.vm2.Globals;
-import org.luaj.vm2.lib.jse.JsePlatform;
+import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.*;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -30,11 +25,11 @@ public class UserGameMechanicsActor extends AbstractActor {
     }
 
     private final String mLogin;
-    private final Globals mLuaGlobals;
+    public final LuaMachine mLuaMachine;
 
     private Optional<ActorRef> mNetClient = Optional.empty();
 
-    private Optional<GameObject> mPlayerUnit = Optional.empty();
+    private Optional<PlayerUnit> mPlayerUnit = Optional.empty();
 
     private Set<Movable> mMovingGameObjects = new HashSet<>();
 
@@ -48,20 +43,18 @@ public class UserGameMechanicsActor extends AbstractActor {
                 .match(SpawnPlayerUnit.class, this::onSpawnPlayerUnit)
                 .build());
 
-        mLuaGlobals = JsePlatform.standardGlobals();
+        mLuaMachine = new LuaMachine();
     }
     private void onHeartbeatTick(HeartbeatTick tick) {
-        mMovingGameObjects.removeIf(go -> go.getBasicState() != GameObject.GameObjectState.MOVING);
+        mMovingGameObjects.removeIf(go -> go.getBasicState() != GameObjectState.MOVING);
         mMovingGameObjects.forEach(Movable::performMoving);
 
         mPlayerUnit.ifPresent(unit -> mNetClient.ifPresent(a -> a.tell(makeStateMsg(unit), self())));
     }
 
     private void onSpawnPlayerUnit(SpawnPlayerUnit msg) {
-        String script = "src/main/lua/org.darkmentat.LandOfLords.Server.scripts/PlayerUnit.lua";
-
-        PlayerUnit playerUnit = new PlayerUnit(mLogin, "Player", mLuaGlobals.loadfile(script).call());
-
+        PlayerUnit playerUnit = new PlayerUnit(mLogin, mLuaMachine.loadPlayerUnit());
+        playerUnit.move(10, 10);
         mMovingGameObjects.add(playerUnit);
 
         mPlayerUnit = Optional.of(playerUnit);
@@ -74,20 +67,20 @@ public class UserGameMechanicsActor extends AbstractActor {
         mNetClient = Optional.empty();
     }
 
-    private GeneratedMessage makeStateMsg(GameObject player){
+    private GeneratedMessage makeStateMsg(PlayerUnit player){
         PlayerUnitState.Builder stateMsg = PlayerUnitState.newBuilder();
 
         stateMsg.setGameObjectState(player.getBasicState().name());
 
-        stateMsg.setX(((Positionable) player).getX());
-        stateMsg.setY(((Positionable) player).getY());
+        stateMsg.setX(player.getX());
+        stateMsg.setY(player.getY());
 
         PlayerUnitState.CellInfo.Builder cellBuilder = PlayerUnitState.CellInfo.newBuilder()
-                .setDescription(GameMap.Instance.getCellDescription((Positionable) player));
+                .setDescription(GameMap.Instance.getCellDescription(player));
 
-        for (Positionable p : GameMap.Instance.getPositionablesOnCell((Positionable) player)) {
-            GameObject go = ((GameObject) p);
-            cellBuilder.addUnits("[" + go.OwnerLogin + "] " + go.Name);
+        for (Positionable p : GameMap.Instance.getPositionablesOnCell(player)) {
+            UserGameObject go = ((UserGameObject) p);
+            cellBuilder.addUnits("[" + go.getOwnerLogin() + "] " + go.getName());
         }
 
         stateMsg.addCellsAround(cellBuilder);
