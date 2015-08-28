@@ -18,10 +18,28 @@ public class App {
                 exception.printStackTrace();
             }
             @Override public void onReceive(NetMessagesToClient.PingClient ping) {
-                System.out.println("ping");
+                System.out.print("ping");
             }
             @Override public void onReceive(NetMessagesToClient.PlayerUnitState state) {
-                System.out.println(state);
+                System.out.print(state.getGameObjectState());
+                System.out.println("\tX: " + state.getX() + " Y: " + state.getY());
+
+                state.getCellsAroundList().forEach(cell -> {
+                    System.out.print("Cell: " + cell.getDescription() + " at (" + cell.getX() + ", " + cell.getY() + ")");
+
+                    if(cell.getUnitsCount() == 0){
+                        System.out.print(" with no units");
+                    } else {
+                        System.out.print(" with units: ");
+
+                        cell.getUnitsList()
+                                .stream()
+                                .reduce((unit, acc) -> acc += ", " + unit)
+                                .ifPresent(System.out::println);
+                    }
+                });
+
+                System.out.println("\n");
             }
             @Override public void onClose() {
                 System.out.println("closing socket");

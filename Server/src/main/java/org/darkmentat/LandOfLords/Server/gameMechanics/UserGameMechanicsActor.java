@@ -4,16 +4,12 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.japi.pf.ReceiveBuilder;
 import com.google.protobuf.GeneratedMessage;
-import org.darkmentat.LandOfLords.Common.NetMessagesToClient;
-import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.GameObject;
-import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.Movable;
-import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.PlayerUnit;
-import org.luaj.vm2.Globals;
-import org.luaj.vm2.lib.jse.JsePlatform;
+import org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects.*;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
 
-import static org.darkmentat.LandOfLords.Common.NetMessagesToClient.*;
+import static org.darkmentat.LandOfLords.Common.NetMessagesToClient.PlayerUnitState;
 import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.SpawnPlayerUnit;
 import static org.darkmentat.LandOfLords.Server.network.NetworkClientActor.LoginClientActor;
 import static org.darkmentat.LandOfLords.Server.network.NetworkClientActor.UnLoginClientActor;
@@ -27,13 +23,12 @@ public class UserGameMechanicsActor extends AbstractActor {
     }
 
     private final String mLogin;
-    private final Globals mLuaGlobals;
+    private final LuaMachine mLuaMachine;
+    private final GameMapPerformer mMapPerformer;
 
     private Optional<ActorRef> mNetClient = Optional.empty();
 
-    private Optional<GameObject> mPlayerUnit = Optional.empty();
-
-    private Set<Movable> mMovingGameObjects = new HashSet<>();
+    private Optional<PlayerUnit> mPlayerUnit = Optional.empty();
 
     public UserGameMechanicsActor(String login) {
         mLogin = login;
@@ -45,21 +40,19 @@ public class UserGameMechanicsActor extends AbstractActor {
                 .match(SpawnPlayerUnit.class, this::onSpawnPlayerUnit)
                 .build());
 
-        mLuaGlobals = JsePlatform.standardGlobals();
+        mLuaMachine = new LuaMachine();
+        mMapPerformer = new GameMapPerformer();
     }
     private void onHeartbeatTick(HeartbeatTick tick) {
-        mMovingGameObjects.removeIf(go -> go.getBasicState() != GameObject.GameObjectState.MOVING);
-        mMovingGameObjects.forEach(Movable::performMoving);
+        mMapPerformer.performActions();
 
         mPlayerUnit.ifPresent(unit -> mNetClient.ifPresent(a -> a.tell(makeStateMsg(unit), self())));
     }
 
     private void onSpawnPlayerUnit(SpawnPlayerUnit msg) {
-        String script = "src/main/lua/org.darkmentat.LandOfLords.Server.scripts/PlayerUnit.lua";
-
-        PlayerUnit playerUnit = new PlayerUnit(mLogin, "Player", mLuaGlobals.loadfile(script).call());
-
-        mMovingGameObjects.add(playerUnit);
+        PlayerUnit playerUnit = new PlayerUnit(mLogin, mLuaMachine.loadPlayerUnit());
+        playerUnit.move(10, 10);
+        mMapPerformer.registerPositionable(playerUnit);
 
         mPlayerUnit = Optional.of(playerUnit);
     }
@@ -71,10 +64,26 @@ public class UserGameMechanicsActor extends AbstractActor {
         mNetClient = Optional.empty();
     }
 
-    private GeneratedMessage makeStateMsg(GameObject player){
+    private GeneratedMessage makeStateMsg(PlayerUnit player){
         PlayerUnitState.Builder stateMsg = PlayerUnitState.newBuilder();
 
         stateMsg.setGameObjectState(player.getBasicState().name());
+
+        stateMsg.setX(player.getX());
+        stateMsg.setY(player.getY());
+
+        for (Observational.CellInfo cell : player.getSurroundingsInfo()) {
+            PlayerUnitState.CellInfo.Builder cellBuilder = PlayerUnitState.CellInfo.newBuilder()
+                    .setX(cell.X)
+                    .setY(cell.Y)
+                    .setDescription(cell.Description);
+
+            for (String pos : cell.getPositionables()) {
+                cellBuilder.addUnits(pos);
+            }
+
+            stateMsg.addCellsAround(cellBuilder);
+        }
 
         for (Map.Entry<String, String> entry : player.getStateValues().entrySet()) {
             stateMsg.addStateValue(PlayerUnitState.KeyValueTupple.newBuilder()

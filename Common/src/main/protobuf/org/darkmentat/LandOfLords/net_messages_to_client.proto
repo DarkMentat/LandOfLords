@@ -7,13 +7,23 @@ enum TypeToClient { PING_CLIENT = 2; PLAYER_UNIT_STATE = 3;}
 
 message PingClient {}
 message PlayerUnitState {
+    message CellInfo {
+        required int32 x = 1;
+        required int32 y = 2;
+        required string description = 3;
+        repeated string units = 4;
+    }
     message KeyValueTupple {
         required string key = 1;
         required string value = 2;
     }
 
-    required string GameObjectState = 1;
-    repeated KeyValueTupple stateValue = 2;
+    required string gameObjectState = 1;
+    required int32 x = 2;
+    required int32 y = 3;
+    repeated CellInfo cellsAround = 4;
+
+    repeated KeyValueTupple stateValue = 5;
 }
 message MessageToClient {
     required TypeToClient type = 1;
