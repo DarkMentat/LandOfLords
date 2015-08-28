@@ -2,7 +2,7 @@ package org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects;
 
 import org.luaj.vm2.LuaValue;
 
-public class PlayerUnit implements UserGameObject, Movable {
+public class PlayerUnit implements UserGameObject, Movable, Observational {
     private final String mOwnerLogin;
     private final String mName;
     private final LuaValue mScript;
@@ -21,5 +21,9 @@ public class PlayerUnit implements UserGameObject, Movable {
     }
     @Override public LuaValue getGameObjectScript() {
         return mScript;
+    }
+
+    @Override public String toString() {
+        return "[" + mOwnerLogin + "] " + mName;
     }
 }

@@ -15,8 +15,8 @@ public class GameMap {
     private Map<Positionable, String> mPositionablesCoordinates = new HashMap<>();
 
     private GameMap() {
-        for (int x = 0; x < 10; x++) {
-            for (int y = 0; y < 10; y++) {
+        for (int x = -5; x < 15; x++) {
+            for (int y = -5; y < 15; y++) {
                 String coords = coordToString(x, y);
 
                 mCellDescriptions.put(coords, "Some cell");

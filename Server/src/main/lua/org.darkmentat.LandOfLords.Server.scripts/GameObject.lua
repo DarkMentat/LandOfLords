@@ -22,9 +22,9 @@ GameObject.makePositionable = function (go, x, y)
 end
 
 GameObject.makeMovable = function (go, x, y)
-    go = GameObject.makePositionable(go, x, y)
+    GameObject.makePositionable(go, x, y)
 
-    go.Skills.Moving = Skills.Moving
+    go.Skills.Moving = Skills.Moving(1)
 
     function go:move(toX, toY)
         self.State = self.Skills.Moving.PossibleStates.Moving(self, toX, toY)
@@ -34,6 +34,28 @@ GameObject.makeMovable = function (go, x, y)
     end
 
     return go
+end
+
+GameObject.makeObservational = function (go)
+    go.Surroundings = {}
+    go.Skills.Observation = Skills.Observation(1)
+
+    function go:getSurroundingRadius()
+        return self.Skills.Observation.Mastery
+    end
+
+    function go:setSurroundings(array)
+        self.Surroundings = {}
+
+        for _,v in pairs(array) do
+            table.insert(self.Surroundings, {
+                X = v.X,
+                Y = v.Y,
+                Description = v.Description,
+                Positionables = v.Positionables
+            })
+        end
+   end
 end
 
 return GameObject

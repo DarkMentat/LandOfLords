@@ -1,3 +1,7 @@
 GameObject = dofile('src/main/lua/org.darkmentat.LandOfLords.Server.scripts/GameObject.lua')
 
-return GameObject.makeMovable(GameObject.create(), 0, 0)
+local unit = GameObject.create()
+GameObject.makeObservational(unit)
+GameObject.makeMovable(unit, 0, 0)
+
+return unit

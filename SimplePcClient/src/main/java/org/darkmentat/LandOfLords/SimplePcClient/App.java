@@ -25,19 +25,18 @@ public class App {
                 System.out.println("\tX: " + state.getX() + " Y: " + state.getY());
 
                 state.getCellsAroundList().forEach(cell -> {
-                    System.out.print("Cell: " + cell.getDescription());
+                    System.out.print("Cell: " + cell.getDescription() + " at (" + cell.getX() + ", " + cell.getY() + ")");
 
                     if(cell.getUnitsCount() == 0){
                         System.out.print(" with no units");
-                        return;
                     } else {
                         System.out.print(" with units: ");
-                    }
 
-                    cell.getUnitsList()
-                            .stream()
-                            .reduce((unit, acc) -> acc += ", " + unit)
-                            .ifPresent(System.out::println);
+                        cell.getUnitsList()
+                                .stream()
+                                .reduce((unit, acc) -> acc += ", " + unit)
+                                .ifPresent(System.out::println);
+                    }
                 });
 
                 System.out.println("\n");

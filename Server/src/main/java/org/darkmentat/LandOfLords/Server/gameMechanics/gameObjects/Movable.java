@@ -1,6 +1,5 @@
 package org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects;
 
-import org.darkmentat.LandOfLords.Server.gameMechanics.GameMap;
 import org.luaj.vm2.LuaInteger;
 
 public interface Movable extends Positionable {
@@ -12,6 +11,5 @@ public interface Movable extends Positionable {
     }
     default void performMoving(){
         getState().invokemethod("performMoving");
-        GameMap.Instance.invalidatePositionableCoordinates(this);
     }
 }
