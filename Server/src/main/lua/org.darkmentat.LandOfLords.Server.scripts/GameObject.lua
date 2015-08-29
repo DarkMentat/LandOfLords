@@ -10,6 +10,13 @@ GameObject.create = function ()
     ctor.State = {}
     ctor.Memory = {}
     ctor.Behaviour = nil
+    ctor.Controller = {}
+
+    function ctor:eval(untrusted_code)
+        local untrusted_function, message = load(untrusted_code, nil, 't', self.Controller)
+        if not untrusted_function then return nil, message end
+        return pcall(untrusted_function)
+    end
 
     return ctor
 end
@@ -26,11 +33,11 @@ GameObject.makeMovable = function (go, x, y)
 
     go.Skills.Moving = Skills.Moving(1)
 
-    function go:move(toX, toY)
-        self.State = self.Skills.Moving.PossibleStates.Moving(self, toX, toY)
+    function go.Controller.move(toX, toY)
+        go.State = go.Skills.Moving.PossibleStates.Moving(go, toX, toY)
     end
-    function go:stay()
-        self.State = self.Skills.Moving.PossibleStates.Staying(self)
+    function go.Controller.stay()
+        go.State = go.Skills.Moving.PossibleStates.Staying(go)
     end
 
     return go

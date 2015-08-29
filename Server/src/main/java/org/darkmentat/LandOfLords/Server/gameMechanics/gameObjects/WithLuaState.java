@@ -1,5 +1,6 @@
 package org.darkmentat.LandOfLords.Server.gameMechanics.gameObjects;
 
+import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
@@ -27,5 +28,9 @@ public interface WithLuaState {
         }
 
         return result;
+    }
+
+    default void eval(String code){
+        getGameObjectScript().invokemethod("eval", LuaString.valueOf(code));
     }
 }

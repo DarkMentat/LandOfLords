@@ -51,7 +51,7 @@ public class UserGameMechanicsActor extends AbstractActor {
 
     private void onSpawnPlayerUnit(SpawnPlayerUnit msg) {
         PlayerUnit playerUnit = new PlayerUnit(mLogin, mLuaMachine.loadPlayerUnit());
-        playerUnit.move(10, 10);
+        playerUnit.eval("move(10, 10)");
         mMapPerformer.registerPositionable(playerUnit);
 
         mPlayerUnit = Optional.of(playerUnit);
