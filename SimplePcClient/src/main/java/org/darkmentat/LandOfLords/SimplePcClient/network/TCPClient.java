@@ -88,7 +88,7 @@ public class TCPClient {
         if (msg instanceof Login) return MessageToServer.newBuilder().setType(TypeToServer.LOGIN).setLogin((Login) msg).build();
         if (msg instanceof Register) return MessageToServer.newBuilder().setType(TypeToServer.REGISTER).setRegister((Register) msg).build();
         if (msg instanceof SpawnPlayerUnit) return MessageToServer.newBuilder().setType(TypeToServer.SPAWN_PLAYER_UNIT).setSpawnPlayerUnit((SpawnPlayerUnit) msg).build();
-
+        if (msg instanceof CommandPlayerUnit) return MessageToServer.newBuilder().setType(TypeToServer.COMMAND_PLAYER_UNIT).setCommandPlayerUnit((CommandPlayerUnit) msg).build();
 
         throw new IllegalArgumentException("message must be from net_messages_to_server.proto");
     }

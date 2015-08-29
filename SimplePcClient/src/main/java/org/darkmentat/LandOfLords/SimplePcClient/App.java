@@ -28,7 +28,7 @@ public class App {
                     System.out.print("Cell: " + cell.getDescription() + " at (" + cell.getX() + ", " + cell.getY() + ")");
 
                     if(cell.getUnitsCount() == 0){
-                        System.out.print(" with no units");
+                        System.out.println(" with no units");
                     } else {
                         System.out.print(" with units: ");
 
@@ -71,6 +71,14 @@ public class App {
 
             if(split.length == 1 && split[0].equals("spawn")){
                 client.send(SpawnPlayerUnit.newBuilder().build());
+            }
+
+            if(split.length == 3 && split[0].equals("goto")){
+                client.send(CommandPlayerUnit.newBuilder().setLuaCode("move("+split[1]+", "+split[2]+")").build());
+            }
+
+            if(split.length == 1 && split[0].equals("stay")){
+                client.send(CommandPlayerUnit.newBuilder().setLuaCode("stay()").build());
             }
         }
 

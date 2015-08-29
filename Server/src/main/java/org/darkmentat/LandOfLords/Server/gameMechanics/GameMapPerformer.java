@@ -20,6 +20,8 @@ public class GameMapPerformer {
     public GameMapPerformer() { }
 
     public void registerPositionable(Positionable positionable){
+        mMap.invalidatePositionableCoordinates(positionable);
+
         if (positionable instanceof Movable) {
             mMovables.add((Movable) positionable);
         }
@@ -30,8 +32,10 @@ public class GameMapPerformer {
     }
 
     public void performActions(){
-        mMovables.stream().filter(m -> m.getBasicState() == GameObjectState.MOVING).forEach(Movable::performMoving);
-        mMovables.stream().filter(m -> m.getBasicState() == GameObjectState.MOVING).forEach(mMap::invalidatePositionableCoordinates);
+        mMovables.stream().filter(m -> m.getBasicState() == GameObjectState.MOVING).forEach((movable) ->  {
+            movable.performMoving();
+            mMap.invalidatePositionableCoordinates(movable);
+        });
 
         mObservationals.forEach(o -> o.setSurroundingsInfo(getSurroundingsCellInfo(o)));
     }
@@ -47,7 +51,7 @@ public class GameMapPerformer {
         for (int x = obsX - radius; x <= obsX + radius; x++) {
             for (int y = obsY - radius; y <= obsY + radius; y++) {
                 String desc = mMap.getCellDescription(observational);
-                String[] poss = Arrays.stream(mMap.getPositionablesOnCell(observational))
+                String[] poss = Arrays.stream(mMap.getPositionablesOnCell(x, y))
                         .map(Object::toString)
                         .toArray(String[]::new);
 

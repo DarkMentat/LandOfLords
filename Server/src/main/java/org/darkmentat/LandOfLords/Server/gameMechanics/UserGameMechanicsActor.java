@@ -11,6 +11,7 @@ import java.util.Optional;
 
 import static org.darkmentat.LandOfLords.Common.NetMessagesToClient.PlayerUnitState;
 import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.SpawnPlayerUnit;
+import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.CommandPlayerUnit;
 import static org.darkmentat.LandOfLords.Server.network.NetworkClientActor.LoginClientActor;
 import static org.darkmentat.LandOfLords.Server.network.NetworkClientActor.UnLoginClientActor;
 
@@ -38,6 +39,7 @@ public class UserGameMechanicsActor extends AbstractActor {
                 .match(LoginClientActor.class, this::onLoginNetClient)
                 .match(UnLoginClientActor.class, this::onUnLoginNetClient)
                 .match(SpawnPlayerUnit.class, this::onSpawnPlayerUnit)
+                .match(CommandPlayerUnit.class, this::onCommandPlayerUnit)
                 .build());
 
         mLuaMachine = new LuaMachine();
@@ -51,10 +53,16 @@ public class UserGameMechanicsActor extends AbstractActor {
 
     private void onSpawnPlayerUnit(SpawnPlayerUnit msg) {
         PlayerUnit playerUnit = new PlayerUnit(mLogin, mLuaMachine.loadPlayerUnit());
-        playerUnit.eval("move(10, 10)");
+
         mMapPerformer.registerPositionable(playerUnit);
 
         mPlayerUnit = Optional.of(playerUnit);
+    }
+    private void onCommandPlayerUnit(CommandPlayerUnit msg) {
+        mPlayerUnit.ifPresent(unit -> {
+            String code = msg.getLuaCode();
+            unit.eval(code);
+        });
     }
 
     private void onLoginNetClient(LoginClientActor login) {
