@@ -99,6 +99,10 @@ public class NetworkClientActor extends AbstractActor {
             case SPAWN_PLAYER_UNIT:
                 context().actorFor(UserGameMechanicsActor.getPath(mLogin)).tell(message.getSpawnPlayerUnit(), self());
                 break;
+
+            case COMMAND_PLAYER_UNIT:
+                context().actorFor(UserGameMechanicsActor.getPath(mLogin)).tell(message.getCommandPlayerUnit(), self());
+                break;
         }
     }
 
