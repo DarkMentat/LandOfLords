@@ -3,4 +3,7 @@ target/
 Server/Server.iml
 SimplePcClient/SimplePcClient.iml
 Common/Common.iml
+GdxClient/GdxClient.iml
+GdxClient/core/GdxClient-core.iml
+GdxClient/desktop/GdxClient-desktop.iml
 gen/
