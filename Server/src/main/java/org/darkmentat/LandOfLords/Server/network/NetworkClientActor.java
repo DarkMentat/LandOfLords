@@ -8,16 +8,16 @@ import akka.japi.pf.ReceiveBuilder;
 import akka.util.ByteString;
 import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.darkmentat.LandOfLords.Common.NetMessagesToClient;
 import org.darkmentat.LandOfLords.Common.utils.FakeOutputStream;
 import org.darkmentat.LandOfLords.Server.gameMechanics.GameMechanicsActor;
 import org.darkmentat.LandOfLords.Server.gameMechanics.UserGameMechanicsActor;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.darkmentat.LandOfLords.Common.NetMessagesToClient.*;
-import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.*;
-import static org.darkmentat.LandOfLords.Server.network.FrontNetworkActor.*;
+import static org.darkmentat.LandOfLords.Common.NetMessagesToServer.MessageToServer;
 
 public class NetworkClientActor extends AbstractActor {
     public static class LoginClientActor {
@@ -60,9 +60,13 @@ public class NetworkClientActor extends AbstractActor {
     private void onReceivedData(Tcp.Received received) {
         byte[] data = received.data().toArray();
 
+        List<byte[]> messages = splitInputToMessages(data);
+
         try {
-            MessageToServer message = MessageToServer.parseFrom(data);
-            handleReceivedMessage(message);
+            for (byte[] bytes : messages) {
+                MessageToServer message = MessageToServer.parseFrom(bytes);
+                handleReceivedMessage(message);
+            }
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
             context().stop(self());
@@ -149,5 +153,31 @@ public class NetworkClientActor extends AbstractActor {
         }
 
         return toByteString(fakeOutputStream);
+    }
+
+    private List<byte[]> splitInputToMessages(byte[] data){
+        //
+        // Hack, because akka hates protobuf and his delimited messages =(
+        //
+
+        List<byte[]> res = new ArrayList<>();
+
+        int prevMsgStarts = 0;
+
+        final int startNewMessageByte = 8;
+        for (int i = 1; i < data.length; i++) {
+            if(data[i] == startNewMessageByte){
+                byte[] prevMsg = new byte[i-prevMsgStarts];
+                System.arraycopy(data, prevMsgStarts, prevMsg, 0, i-prevMsgStarts);
+                res.add(prevMsg);
+                prevMsgStarts = i;
+            }
+        }
+
+        byte[] prevMsg = new byte[data.length - prevMsgStarts];
+        System.arraycopy(data, prevMsgStarts, prevMsg, 0, data.length - prevMsgStarts);
+        res.add(prevMsg);
+
+        return res;
     }
 }

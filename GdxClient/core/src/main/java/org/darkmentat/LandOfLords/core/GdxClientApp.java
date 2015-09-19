@@ -30,20 +30,10 @@ public class GdxClientApp implements ApplicationListener, TCPClientListener {
         tcpClient.connect();
         tcpClient.setListener(this);
 
-
-        // server will ignore messages if we send them without sleeping
-        // Maybe we must delimit messages to send
-        try {
-            tcpClient.send(PingServer.newBuilder().build());
-            Thread.sleep(100);
-            tcpClient.send(Register.newBuilder().setLogin("DarkMentat").setEmail("indraua@gmail.com").build());
-            Thread.sleep(100);
-            tcpClient.send(Login.newBuilder().setLogin("DarkMentat").build());
-            Thread.sleep(100);
-            tcpClient.send(SpawnPlayerUnit.newBuilder().build());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        tcpClient.send(PingServer.newBuilder().build());
+        tcpClient.send(Register.newBuilder().setLogin("DarkMentat").setEmail("indraua@gmail.com").build());
+        tcpClient.send(Login.newBuilder().setLogin("DarkMentat").build());
+        tcpClient.send(SpawnPlayerUnit.newBuilder().build());
     }
 
 	@Override
