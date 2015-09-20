@@ -1,7 +1,10 @@
 package org.darkmentat.LandOfLords.core;
 
+import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.GL30;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
@@ -15,16 +18,25 @@ import org.darkmentat.LandOfLords.core.network.TCPClient;
 import org.darkmentat.LandOfLords.core.network.TCPClientListener;
 
 public class GdxClientApp implements ApplicationListener, TCPClientListener {
-	Texture texture;
-	SpriteBatch batch;
-	float elapsed;
+    WorldMap map;
+    Sprite player;
+
+    SpriteBatch batch;
 
     private TCPClient tcpClient;
+    private Camera camera;
 
-	@Override
+    @Override
 	public void create () {
-		texture = new Texture(Gdx.files.internal("libgdx-logo.png"));
+        map = new WorldMap(-5, -5, 20, 20);
+        player = new Sprite(new Texture(Gdx.files.internal("player.png")));
+        player.setSize(WorldMap.CELL_SIZE, WorldMap.CELL_SIZE);
+
+        camera = new OrthographicCamera(10*WorldMap.CELL_SIZE, 10*WorldMap.CELL_SIZE);
+
 		batch = new SpriteBatch();
+
+        batch.setProjectionMatrix(camera.combined);
 
         tcpClient = new TCPClient("localhost", 8080);
         tcpClient.connect();
@@ -42,11 +54,13 @@ public class GdxClientApp implements ApplicationListener, TCPClientListener {
 
 	@Override
 	public void render () {
-		elapsed += Gdx.graphics.getDeltaTime();
 		Gdx.gl.glClearColor(0, 0, 0, 0);
 		Gdx.gl.glClear(GL30.GL_COLOR_BUFFER_BIT);
 		batch.begin();
-		batch.draw(texture, 100+100*(float)Math.cos(elapsed), 100+25*(float)Math.sin(elapsed));
+
+        map.draw(batch);
+        player.draw(batch);
+
 		batch.end();
 	}
 
@@ -75,6 +89,8 @@ public class GdxClientApp implements ApplicationListener, TCPClientListener {
         System.out.println("ping received");
     }
     @Override public void onSocketMessageReceive(PlayerUnitState state) {
+        player.setPosition(WorldMap.CELL_SIZE*state.getX(), WorldMap.CELL_SIZE*state.getY());
+
         System.out.print(state.getGameObjectState());
         System.out.println("\tX: " + state.getX() + " Y: " + state.getY());
 
